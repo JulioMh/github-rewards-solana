@@ -1,5 +1,9 @@
 pub use add_repo::*;
+pub use claim_rewards::*;
+pub use init_token::*;
 pub use vote_repo::*;
 
 pub mod add_repo;
+pub mod claim_rewards;
+pub mod init_token;
 pub mod vote_repo;

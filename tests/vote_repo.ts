@@ -27,14 +27,14 @@ describe("vote_repo", () => {
   );
 
   const [votePda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("vote"), repoPda.toBuffer(), provider.publicKey.toBuffer()],
+    [Buffer.from("vote"), provider.publicKey.toBuffer(), repoPda.toBuffer()],
     program.programId
   );
 
   describe("Initialize", () => {
     it("create repo", async () => {
       await program.methods
-        .addRepo(repo.owner, repo.name, repo.branch)
+        .addRepo({ owner: repo.owner, name: repo.name, branch: repo.branch })
         .accounts({ publisher: provider.publicKey })
         .rpc();
 
@@ -54,7 +54,10 @@ describe("vote_repo", () => {
   describe("Happy path", () => {
     it("vote up", async () => {
       await program.methods
-        .voteRepo(repo.owner, repo.name, repo.branch, { up: {} })
+        .voteRepo({
+          repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
+          voteType: { up: {} },
+        })
         .accounts({ voter: provider.publicKey })
         .rpc();
 
@@ -69,13 +72,16 @@ describe("vote_repo", () => {
       await provider.connection.requestAirdrop(newUser.publicKey, 10000000);
 
       await program.methods
-        .voteRepo(repo.owner, repo.name, repo.branch, { down: {} })
+        .voteRepo({
+          repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
+          voteType: { down: {} },
+        })
         .signers([newUser])
         .accounts({ voter: newUser.publicKey })
         .rpc({ skipPreflight: true });
 
       const [votePda1] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("vote"), repoPda.toBuffer(), newUser.publicKey.toBuffer()],
+        [Buffer.from("vote"), newUser.publicKey.toBuffer(), repoPda.toBuffer()],
         program.programId
       );
       const vote_res = await program.account.vote.fetch(votePda1);
@@ -86,7 +92,10 @@ describe("vote_repo", () => {
 
     it("change vote", async () => {
       await program.methods
-        .voteRepo(repo.owner, repo.name, repo.branch, { down: {} })
+        .voteRepo({
+          repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
+          voteType: { down: {} },
+        })
         .accounts({ voter: provider.publicKey })
         .rpc();
 
@@ -100,7 +109,10 @@ describe("vote_repo", () => {
     it("prevent voting the same twice", async () => {
       try {
         await program.methods
-          .voteRepo(repo.owner, repo.name, repo.branch, { down: {} })
+          .voteRepo({
+            repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
+            voteType: { down: {} },
+          })
           .accounts({ voter: provider.publicKey })
           .rpc();
         expect(true).eq(false);

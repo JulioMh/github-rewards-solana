@@ -1,32 +1,31 @@
-use crate::state::Repo;
+use crate::state::{Repo,RepoPayload};
 use anchor_lang::prelude::*;
 
 pub fn add_repo(
         ctx: Context<AddRepo>,
-        owner: String,
-        name: String,
-        branch: String,
+        payload: RepoPayload,
     )-> Result<()> {
         let publisher = ctx.accounts.publisher.key();
         let repo = &mut ctx.accounts.repo;
-        repo.owner = owner;
-        repo.name = name;
-        repo.branch = branch;
+        repo.owner = payload.owner;
+        repo.name = payload.name;
+        repo.branch = payload.branch;
         repo.votes = 0;
         repo.publisher = publisher;
+        repo.bump = ctx.bumps.repo;
 
         Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(owner: String, name: String, branch: String)]
+#[instruction(payload: RepoPayload)]
 pub struct AddRepo<'info> {
     #[account(
         init,
-        seeds = [b"repo", owner.as_bytes(), name.as_bytes(), branch.as_bytes()],
+        seeds = [b"repo", payload.owner.as_bytes(), payload.name.as_bytes(), payload.branch.as_bytes()],
         bump,
         payer = publisher,
-        space = Repo::size(&name, &owner, &branch) 
+        space = Repo::size(&payload.name, &payload.owner, &payload.branch) 
     )]
     pub repo: Account<'info, Repo>,
     #[account(mut)]

@@ -4,6 +4,7 @@ use super::VoteType;
 
 #[account]
 pub struct Repo {
+    pub bump: u8,                 // 1
     pub approved_timestamp: u128, // 16
     pub votes: i128,              // 16
     pub publisher: Pubkey,        // 32
@@ -14,7 +15,7 @@ pub struct Repo {
 
 impl Repo {
     pub fn size(name: &String, owner: &String, branch: &String) -> usize {
-        8 + 32 + 4 + name.len() + 4 + owner.len() + 16 + 4 + branch.len() + 16
+        8 + 32 + 4 + name.len() + 4 + owner.len() + 16 + 4 + branch.len() + 16 + 1
     }
 
     pub fn vote(&mut self, vote_type: &VoteType) {
@@ -30,4 +31,11 @@ impl Repo {
             VoteType::Down => self.votes = self.votes.checked_sub(2).unwrap(),
         }
     }
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct RepoPayload {
+    pub owner: String,
+    pub name: String,
+    pub branch: String,
 }

@@ -1,18 +1,12 @@
 use std::str::FromStr;
 
 use crate::{
-    state::{Repo, Vote, VoteType},
-    CustomError,
+    state::{Repo, RepoPayload, Vote, VoteType},
+    utils::CustomError,
 };
 use anchor_lang::prelude::*;
 
-pub fn vote_repo(
-    ctx: Context<VoteRepo>,
-    _owner: String,
-    _name: String,
-    _branch: String,
-    vote_type: VoteType,
-) -> Result<()> {
+pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()> {
     let voter = ctx.accounts.voter.key();
     let repo: &mut Account<'_, Repo> = &mut ctx.accounts.repo;
     let vote = &mut ctx.accounts.vote;
@@ -21,35 +15,42 @@ pub fn vote_repo(
     let just_initialized = vote.voter.key() == default_pubkey;
 
     require!(
-        just_initialized || vote.vote_type != vote_type,
+        just_initialized || vote.vote_type != payload.vote_type,
         CustomError::VotedAlready
     );
 
     if just_initialized {
-        repo.vote(&vote_type);
+        repo.vote(&payload.vote_type);
         vote.voter = voter;
-        vote.vote_type = vote_type;
+        vote.vote_type = payload.vote_type;
         vote.repo_pda = repo.key();
+        vote.bump = ctx.bumps.vote;
     } else {
-        repo.change_vote(&vote_type);
-        vote.vote_type = vote_type;
+        repo.change_vote(&payload.vote_type);
+        vote.vote_type = payload.vote_type;
     }
 
     Ok(())
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct VoteRepoPayload {
+    pub repo: RepoPayload,
+    pub vote_type: VoteType,
+}
+
 #[derive(Accounts)]
-#[instruction(owner: String, name: String, branch: String)]
+#[instruction(payload: VoteRepoPayload)]
 pub struct VoteRepo<'info> {
     #[account(
         mut,
-        seeds = [b"repo", owner.as_bytes(), name.as_bytes(), branch.as_bytes()],
+        seeds = [b"repo", payload.repo.owner.as_bytes(), payload.repo.name.as_bytes(), payload.repo.branch.as_bytes()],
         bump,
     )]
     pub repo: Account<'info, Repo>,
     #[account(
         init_if_needed,
-        seeds = [b"vote", repo.key().as_ref(), voter.key().as_ref()],
+        seeds = [b"vote", voter.key().as_ref(), repo.key().as_ref()],
         bump,
         payer=voter,
         space = Vote::MAX_SIZE
