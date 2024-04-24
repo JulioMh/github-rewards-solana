@@ -2,56 +2,18 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { SmartContract } from "../target/types/smart_contract";
 import { expect } from "chai";
+import { program, repo, repoPda } from "./utils";
 
 describe("vote_repo", () => {
-  // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-
-  const program = anchor.workspace.SmartContract as Program<SmartContract>;
-
-  const repo = {
-    owner: "JulioMh",
-    name: "github-rewards",
-    branch: "main",
-  };
-
-  const [repoPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("repo"),
-      Buffer.from(repo.owner),
-      Buffer.from(repo.name),
-      Buffer.from(repo.branch),
-    ],
-    program.programId
-  );
 
   const [votePda] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("vote"), provider.publicKey.toBuffer(), repoPda.toBuffer()],
     program.programId
   );
 
-  describe("Initialize", () => {
-    it("create repo", async () => {
-      await program.methods
-        .addRepo({ owner: repo.owner, name: repo.name, branch: repo.branch })
-        .accounts({ publisher: provider.publicKey })
-        .rpc();
-
-      const account = await program.account.repo.fetch(repoPda);
-
-      expect(account.publisher.toString()).equals(
-        provider.publicKey.toString()
-      );
-      expect(account.votes.toNumber()).equals(0);
-      expect(account.approvedTimestamp.toNumber()).equals(0);
-      expect(account.owner).equals(repo.owner);
-      expect(account.name).equals(repo.name);
-      expect(account.branch).equals(repo.branch);
-    });
-  });
-
-  describe("Happy path", () => {
+  describe("happy path", () => {
     it("vote up", async () => {
       await program.methods
         .voteRepo({
@@ -105,7 +67,7 @@ describe("vote_repo", () => {
       expect(repo_res.votes.toNumber()).equals(-2);
     });
   });
-  describe("Errors", () => {
+  describe("errors", () => {
     it("prevent voting the same twice", async () => {
       try {
         await program.methods

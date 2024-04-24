@@ -23,6 +23,13 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
         ctx.accounts.reward.last_claim = payload.timestamp;
     }
 
+    ctx.accounts.reward.total_claimed = ctx
+        .accounts
+        .reward
+        .total_claimed
+        .checked_add(payload.commits.into())
+        .unwrap();
+
     mint_to(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
@@ -33,7 +40,7 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
             },
             signer,
         ),
-        10,
+        payload.commits.checked_mul(1000000000).unwrap(),
     )?;
 
     Ok(())
@@ -42,7 +49,7 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ClaimRewardsPayload {
     pub repo: RepoPayload,
-    pub commits: u32,
+    pub commits: u64,
     pub timestamp: u128,
 }
 

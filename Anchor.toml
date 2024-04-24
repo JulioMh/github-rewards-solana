@@ -7,6 +7,10 @@ skip-lint = false
 [programs.localnet]
 smart_contract = "2F3RA1FWPnsWjmhqjwSLb5pjsPKRc8QaiUaQ5cLWduhM"
 
+[[test.genesis]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program = "./metadata.so"
+
 [registry]
 url = "https://api.apr.dev"
 
