@@ -19,10 +19,10 @@ describe("claim_rewards", () => {
     mint,
     owner: provider.publicKey,
   });
+  const now = Date.now();
 
   describe("happy path", () => {
     it("first time claiming rewards", async () => {
-      const now = Date.now();
       await program.methods
         .claimRewards({
           repo,
@@ -40,6 +40,26 @@ describe("claim_rewards", () => {
 
       const reward = await program.account.reward.fetch(rewardPda);
       expect(reward.totalClaimed.toNumber()).eq(10);
+    });
+
+    it("second time claiming rewards", async () => {
+      await program.methods
+        .claimRewards({
+          repo,
+          commits: new anchor.BN(20),
+          timestamp: new anchor.BN(now + 10),
+        })
+        .accounts({ destination })
+        .rpc();
+
+      const balance = await provider.connection.getTokenAccountBalance(
+        destination
+      );
+
+      expect(balance.value.uiAmount).eq(30);
+
+      const reward = await program.account.reward.fetch(rewardPda);
+      expect(reward.totalClaimed.toNumber()).eq(30);
     });
   });
   describe("errors", () => {});

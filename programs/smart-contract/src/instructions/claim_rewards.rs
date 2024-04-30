@@ -5,7 +5,10 @@ use anchor_spl::{
 };
 use solana_program::pubkey;
 
-use crate::state::{Repo, RepoPayload, Reward};
+use crate::{
+    state::{Repo, RepoPayload, Reward},
+    utils::CustomError,
+};
 
 pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -> Result<()> {
     let seed = b"token";
@@ -15,20 +18,27 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
     let just_initialized =
         ctx.accounts.reward.user.key() == pubkey!("11111111111111111111111111111111");
 
+    require!(
+        just_initialized || payload.timestamp < ctx.accounts.reward.last_claim,
+        CustomError::ClaimedAlready
+    );
+
     if just_initialized {
-        ctx.accounts.reward.user = ctx.accounts.signer.key();
-        ctx.accounts.reward.repo_pda = ctx.accounts.repo.key();
-        ctx.accounts.reward.bump = bump;
-        ctx.accounts.reward.total_claimed = 0;
-        ctx.accounts.reward.last_claim = payload.timestamp;
+        ctx.accounts.reward.initialize(
+            ctx.accounts.signer.key(),
+            ctx.accounts.repo.key(),
+            payload.timestamp,
+            ctx.bumps.reward,
+        );
     }
 
-    ctx.accounts.reward.total_claimed = ctx
-        .accounts
+    ctx.accounts
         .reward
-        .total_claimed
-        .checked_add(payload.commits.into())
-        .unwrap();
+        .update_total_claimed(payload.commits.into());
+
+    ctx.accounts
+        .repo
+        .update_total_claimed(payload.commits.into());
 
     mint_to(
         CpiContext::new_with_signer(
@@ -59,6 +69,7 @@ pub struct ClaimRewards<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(
+        mut,
         seeds = [b"repo", payload.repo.owner.as_bytes(), payload.repo.name.as_bytes(), payload.repo.branch.as_bytes()],
         bump,
     )]

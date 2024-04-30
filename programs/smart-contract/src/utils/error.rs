@@ -4,4 +4,6 @@ use anchor_lang::prelude::*;
 pub enum CustomError {
     #[msg("User has already voted")]
     VotedAlready,
+    #[msg("Commits already claimed")]
+    ClaimedAlready,
 }

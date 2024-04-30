@@ -11,11 +11,12 @@ pub struct Repo {
     pub name: String,             // 4 + len()
     pub owner: String,            // 4 + len()
     pub branch: String,           // 4 + len()
+    pub total_claimed: u128,      // 16
 }
 
 impl Repo {
     pub fn size(name: &String, owner: &String, branch: &String) -> usize {
-        8 + 32 + 4 + name.len() + 4 + owner.len() + 16 + 4 + branch.len() + 16 + 1
+        8 + 32 + 4 + name.len() + 4 + owner.len() + 16 + 4 + branch.len() + 16 + 1 + 16
     }
 
     pub fn vote(&mut self, vote_type: &VoteType) {
@@ -30,6 +31,10 @@ impl Repo {
             VoteType::Up => self.votes = self.votes.checked_add(2).unwrap(),
             VoteType::Down => self.votes = self.votes.checked_sub(2).unwrap(),
         }
+    }
+
+    pub fn update_total_claimed(&mut self, rewards: u128) {
+        self.total_claimed = self.total_claimed.checked_add(rewards).unwrap();
     }
 }
 

@@ -13,6 +13,7 @@ pub fn add_repo(
         repo.votes = 0;
         repo.publisher = publisher;
         repo.bump = ctx.bumps.repo;
+        repo.total_claimed = 0;
 
         Ok(())
 }
