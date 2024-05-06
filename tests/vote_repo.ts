@@ -1,6 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { SmartContract } from "../target/types/smart_contract";
 import { expect } from "chai";
 import { program, repo, repoPda } from "./utils";
 

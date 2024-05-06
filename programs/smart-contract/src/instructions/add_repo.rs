@@ -1,15 +1,17 @@
-use crate::state::{Repo,RepoPayload};
+use crate::{state::{Repo,RepoPayload}, utils::Coupon};
 use anchor_lang::prelude::*;
 
 pub fn add_repo(
         ctx: Context<AddRepo>,
-        payload: RepoPayload,
+        payload: AddRepoPayload,
     )-> Result<()> {
+        payload.coupon.verify(&payload.repo.serialize())?;
+
         let publisher = ctx.accounts.publisher.key();
         let repo = &mut ctx.accounts.repo;
-        repo.owner = payload.owner;
-        repo.name = payload.name;
-        repo.branch = payload.branch;
+        repo.owner = payload.repo.owner;
+        repo.name = payload.repo.name;
+        repo.branch = payload.repo.branch;
         repo.votes = 0;
         repo.publisher = publisher;
         repo.bump = ctx.bumps.repo;
@@ -17,16 +19,21 @@ pub fn add_repo(
 
         Ok(())
 }
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct AddRepoPayload {
+    pub repo: RepoPayload,
+    pub coupon: Coupon,
+}
 
 #[derive(Accounts)]
-#[instruction(payload: RepoPayload)]
+#[instruction(payload: AddRepoPayload)]
 pub struct AddRepo<'info> {
     #[account(
         init,
-        seeds = [b"repo", payload.owner.as_bytes(), payload.name.as_bytes(), payload.branch.as_bytes()],
+        seeds = [b"repo", payload.repo.owner.as_bytes(), payload.repo.name.as_bytes(), payload.repo.branch.as_bytes()],
         bump,
         payer = publisher,
-        space = Repo::size(&payload.name, &payload.owner, &payload.branch) 
+        space = Repo::size(&payload.repo.name, &payload.repo.owner, &payload.repo.branch) 
     )]
     pub repo: Account<'info, Repo>,
     #[account(mut)]

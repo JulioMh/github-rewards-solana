@@ -1,5 +1,8 @@
-import { Program, web3, workspace } from "@coral-xyz/anchor";
+require("dotenv").config();
+import * as anchor from "@coral-xyz/anchor";
 import { SmartContract } from "../target/types/smart_contract";
+import { HDNodeWallet, Wallet } from "ethers";
+import { keccak256, toBuffer, ecsign } from "ethereumjs-utils";
 
 export const repo = {
   owner: "JulioMh",
@@ -7,9 +10,10 @@ export const repo = {
   branch: "main",
 };
 
-export const program = workspace.SmartContract as Program<SmartContract>;
+export const program = anchor.workspace
+  .SmartContract as anchor.Program<SmartContract>;
 
-export const [repoPda] = web3.PublicKey.findProgramAddressSync(
+export const [repoPda] = anchor.web3.PublicKey.findProgramAddressSync(
   [
     Buffer.from("repo"),
     Buffer.from(repo.owner),
@@ -19,7 +23,47 @@ export const [repoPda] = web3.PublicKey.findProgramAddressSync(
   program.programId
 );
 
-export const [mint] = web3.PublicKey.findProgramAddressSync(
+export const [mint] = anchor.web3.PublicKey.findProgramAddressSync(
   [Buffer.from("token")],
   program.programId
 );
+
+export const signCoupon = async (
+  hash: string,
+  signer: Wallet | HDNodeWallet
+) => {
+  const sig = ecsign(toBuffer(hash), toBuffer(signer.privateKey));
+
+  return {
+    signature: Buffer.concat([sig.r, sig.s]).toString("hex"),
+    recoveryId: sig.v - 27,
+  };
+};
+
+export const generateHashBuffer = (values: Uint8Array) => {
+  return keccak256(Buffer.from(values));
+};
+
+export const admin = new Wallet(process.env.ADMIN_PRIV_KEY);
+
+export const showLogs = async ({ program, tx }) => {
+  const connection = program.provider.connection;
+
+  const latestBlockHash = await connection.getLatestBlockhash();
+  await connection.confirmTransaction(
+    {
+      blockhash: latestBlockHash.blockhash,
+      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+      signature: tx,
+    },
+    "confirmed"
+  );
+
+  const txDetails = await program.provider.connection.getTransaction(tx, {
+    maxSupportedTransactionVersion: 0,
+    commitment: "confirmed",
+  });
+
+  const logs = txDetails?.meta?.logMessages || null;
+  console.log(logs);
+};

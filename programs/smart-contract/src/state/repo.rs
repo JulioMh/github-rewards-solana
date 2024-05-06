@@ -44,3 +44,9 @@ pub struct RepoPayload {
     pub name: String,
     pub branch: String,
 }
+
+impl RepoPayload {
+    pub fn serialize(&self) -> Vec<u8> {
+        self.try_to_vec().unwrap()
+    }
+}

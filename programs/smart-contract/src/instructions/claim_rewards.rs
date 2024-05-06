@@ -19,7 +19,7 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
         ctx.accounts.reward.user.key() == pubkey!("11111111111111111111111111111111");
 
     require!(
-        just_initialized || payload.timestamp < ctx.accounts.reward.last_claim,
+        just_initialized || payload.timestamp > ctx.accounts.reward.last_claim,
         CustomError::ClaimedAlready
     );
 

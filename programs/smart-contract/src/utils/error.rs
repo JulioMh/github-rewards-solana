@@ -6,4 +6,6 @@ pub enum CustomError {
     VotedAlready,
     #[msg("Commits already claimed")]
     ClaimedAlready,
+    #[msg("This coupon is invalid")]
+    InvalidCoupon,
 }

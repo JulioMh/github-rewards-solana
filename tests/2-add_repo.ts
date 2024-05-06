@@ -1,14 +1,34 @@
 import * as anchor from "@coral-xyz/anchor";
 import { expect } from "chai";
-import { program, repo, repoPda } from "./utils";
+import * as borsh from "borsh";
+import {
+  admin,
+  generateHashBuffer,
+  program,
+  repo,
+  repoPda,
+  signCoupon,
+} from "./utils";
 
 describe("add_repo", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-
+  const schema = {
+    struct: { owner: "string", name: "string", branch: "string" },
+  };
+  const serializedData = borsh.serialize(schema, repo);
   it("create repo", async () => {
+    const hash: string = generateHashBuffer(serializedData);
+
+    const { signature, recoveryId } = await signCoupon(hash, admin);
     await program.methods
-      .addRepo({ owner: repo.owner, name: repo.name, branch: repo.branch })
+      .addRepo({
+        coupon: {
+          signature,
+          recoveryId,
+        },
+        repo,
+      })
       .accounts({ publisher: provider.publicKey })
       .rpc();
 
