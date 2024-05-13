@@ -20,14 +20,16 @@ pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()>
     );
 
     if just_initialized {
-        repo.vote(&payload.vote_type);
         vote.voter = voter;
         vote.vote_type = payload.vote_type;
         vote.repo_pda = repo.key();
         vote.bump = ctx.bumps.vote;
+        vote.timestamp = payload.timestamp;
+        repo.vote(&vote);
     } else {
-        repo.change_vote(&payload.vote_type);
         vote.vote_type = payload.vote_type;
+        vote.timestamp = payload.timestamp;
+        repo.change_vote(&vote);
     }
 
     Ok(())
@@ -36,6 +38,7 @@ pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()>
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct VoteRepoPayload {
     pub repo: RepoPayload,
+    pub timestamp: u128,
     pub vote_type: VoteType,
 }
 

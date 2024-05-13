@@ -16,12 +16,16 @@ pub fn add_repo(
         repo.publisher = publisher;
         repo.bump = ctx.bumps.repo;
         repo.total_claimed = 0;
+        repo.proposed_timestamp = payload.timestamp;
+        msg!("Repo {:?}/{:?} saved", repo.owner, repo.name);
 
         Ok(())
 }
+
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct AddRepoPayload {
     pub repo: RepoPayload,
+    pub timestamp: u128,
     pub coupon: Coupon,
 }
 

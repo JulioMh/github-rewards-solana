@@ -7,6 +7,7 @@ import {
   program,
   repo,
   repoPda,
+  showLogs,
   signCoupon,
 } from "./utils";
 
@@ -21,12 +22,13 @@ describe("add_repo", () => {
     const hash: string = generateHashBuffer(serializedData);
 
     const { signature, recoveryId } = await signCoupon(hash, admin);
-    await program.methods
+    const tx = await program.methods
       .addRepo({
         coupon: {
           signature,
           recoveryId,
         },
+        timestamp: new anchor.BN(Date.now()),
         repo,
       })
       .accounts({ publisher: provider.publicKey })

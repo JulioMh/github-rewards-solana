@@ -5,7 +5,7 @@ pub mod instructions;
 pub mod state;
 pub mod utils;
 
-declare_id!("2F3RA1FWPnsWjmhqjwSLb5pjsPKRc8QaiUaQ5cLWduhM");
+declare_id!("2QDECqPyjFKrTxC2cJciA6iERVHHh7bHELzD5WRgScPk");
 
 #[program]
 pub mod smart_contract {
@@ -30,5 +30,9 @@ pub mod smart_contract {
 
     pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -> Result<()> {
         instructions::claim_rewards::claim_rewards(ctx, payload)
+    }
+
+    pub fn subscribe(ctx: Context<Subscribe>, payload: SubscribePayload) -> Result<()> {
+        instructions::subscribe::subscribe(ctx, payload)
     }
 }

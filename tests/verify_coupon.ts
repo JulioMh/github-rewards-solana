@@ -6,7 +6,7 @@ import * as borsh from "borsh";
 import { expect } from "chai";
 import { admin, generateHashBuffer, showLogs, signCoupon } from "./utils";
 
-describe("claim_rewards", () => {
+describe("verify_coupon", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 

@@ -1,8 +1,10 @@
 require("dotenv").config();
+import { SignJWT } from "jose";
 import * as anchor from "@coral-xyz/anchor";
 import { SmartContract } from "../target/types/smart_contract";
 import { HDNodeWallet, Wallet } from "ethers";
 import { keccak256, toBuffer, ecsign } from "ethereumjs-utils";
+import * as borsh from "borsh";
 
 export const repo = {
   owner: "JulioMh",
@@ -66,4 +68,36 @@ export const showLogs = async ({ program, tx }) => {
 
   const logs = txDetails?.meta?.logMessages || null;
   console.log(logs);
+};
+
+export const generateId = async (githubId: string) => {
+  return new SignJWT({ githubId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .sign(Buffer.from("key"));
+};
+
+export const repoSchema = {
+  struct: { owner: "string", name: "string", branch: "string" },
+};
+
+export const addRepo = async (provider, repo) => {
+  const serializedData = borsh.serialize(repoSchema, {
+    owner: "a",
+    name: "b",
+    branch: "z",
+  });
+  const hash: string = generateHashBuffer(serializedData);
+  const { signature, recoveryId } = await signCoupon(hash, admin);
+  await program.methods
+    .addRepo({
+      coupon: {
+        signature,
+        recoveryId,
+      },
+      timestamp: new anchor.BN(Date.now()),
+      repo,
+    })
+    .accounts({ publisher: provider.publicKey })
+    .rpc();
 };

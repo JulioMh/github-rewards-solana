@@ -12,11 +12,12 @@ describe("vote_repo", () => {
   );
 
   describe("happy path", () => {
-    it("vote up", async () => {
+    it("vote down", async () => {
       await program.methods
         .voteRepo({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
-          voteType: { up: {} },
+          timestamp: new anchor.BN(Date.now()),
+          voteType: { down: {} },
         })
         .accounts({ voter: provider.publicKey })
         .rpc();
@@ -24,21 +25,24 @@ describe("vote_repo", () => {
       const vote_res = await program.account.vote.fetch(votePda);
       const repo_res = await program.account.repo.fetch(repoPda);
       expect(vote_res.repoPda.toString()).equals(repoPda.toString());
-      expect(repo_res.votes.toNumber()).equals(1);
+      expect(repo_res.votes.toNumber()).equals(-1);
+      expect(repo_res.approved).equals(false);
     });
 
-    it("vote down", async () => {
+    it("vote up", async () => {
       const newUser = anchor.web3.Keypair.generate();
       await provider.connection.requestAirdrop(newUser.publicKey, 10000000);
 
       await program.methods
         .voteRepo({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
-          voteType: { down: {} },
+          timestamp: new anchor.BN(Date.now()),
+          voteType: { up: {} },
         })
         .signers([newUser])
         .accounts({ voter: newUser.publicKey })
-        .rpc({ skipPreflight: true });
+        .rpc()
+        .catch((e) => console.log(e));
 
       const [votePda1] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from("vote"), newUser.publicKey.toBuffer(), repoPda.toBuffer()],
@@ -48,13 +52,15 @@ describe("vote_repo", () => {
       const repo_res = await program.account.repo.fetch(repoPda);
       expect(vote_res.repoPda.toString()).equals(repoPda.toString());
       expect(repo_res.votes.toNumber()).equals(0);
+      expect(repo_res.approved).equals(false);
     });
 
     it("change vote", async () => {
       await program.methods
         .voteRepo({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
-          voteType: { down: {} },
+          voteType: { up: {} },
+          timestamp: new anchor.BN(Date.now()),
         })
         .accounts({ voter: provider.publicKey })
         .rpc();
@@ -62,7 +68,8 @@ describe("vote_repo", () => {
       const vote_res = await program.account.vote.fetch(votePda);
       const repo_res = await program.account.repo.fetch(repoPda);
       expect(vote_res.repoPda.toString()).equals(repoPda.toString());
-      expect(repo_res.votes.toNumber()).equals(-2);
+      expect(repo_res.votes.toNumber()).equals(2);
+      expect(repo_res.approved).equals(true);
     });
   });
   describe("errors", () => {
@@ -72,6 +79,7 @@ describe("vote_repo", () => {
           .voteRepo({
             repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
             voteType: { down: {} },
+            timestamp: new anchor.BN(Date.now()),
           })
           .accounts({ voter: provider.publicKey })
           .rpc();

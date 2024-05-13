@@ -3,42 +3,30 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{mint_to, Mint, MintTo, Token, TokenAccount},
 };
-use solana_program::pubkey;
 
 use crate::{
-    state::{Repo, RepoPayload, Reward},
-    utils::CustomError,
+    state::{Claim, Repo, RepoPayload, Subscription},
+    utils::{Coupon, CustomError},
 };
 
 pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -> Result<()> {
+    payload.coupon.verify(&payload.claim.serialize())?;
+    require!(
+        payload.claim.timestamp > ctx.accounts.subscription.last_claim,
+        CustomError::ClaimedAlready
+    );
+
     let seed = b"token";
     let bump = ctx.bumps.token;
     let signer: &[&[&[u8]]] = &[&[seed, &[bump]]];
 
-    let just_initialized =
-        ctx.accounts.reward.user.key() == pubkey!("11111111111111111111111111111111");
-
-    require!(
-        just_initialized || payload.timestamp > ctx.accounts.reward.last_claim,
-        CustomError::ClaimedAlready
-    );
-
-    if just_initialized {
-        ctx.accounts.reward.initialize(
-            ctx.accounts.signer.key(),
-            ctx.accounts.repo.key(),
-            payload.timestamp,
-            ctx.bumps.reward,
-        );
-    }
-
     ctx.accounts
-        .reward
-        .update_total_claimed(payload.commits.into());
+        .subscription
+        .update_total_claimed(payload.claim.commits.into(), payload.claim.timestamp);
 
     ctx.accounts
         .repo
-        .update_total_claimed(payload.commits.into());
+        .update_total_claimed(payload.claim.commits.into());
 
     mint_to(
         CpiContext::new_with_signer(
@@ -50,7 +38,7 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
             },
             signer,
         ),
-        payload.commits.checked_mul(1000000000).unwrap(),
+        payload.claim.commits.checked_mul(1000000000).unwrap(),
     )?;
 
     Ok(())
@@ -59,8 +47,8 @@ pub fn claim_rewards(ctx: Context<ClaimRewards>, payload: ClaimRewardsPayload) -
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ClaimRewardsPayload {
     pub repo: RepoPayload,
-    pub commits: u64,
-    pub timestamp: u128,
+    pub claim: Claim,
+    pub coupon: Coupon,
 }
 
 #[derive(Accounts)]
@@ -75,13 +63,11 @@ pub struct ClaimRewards<'info> {
     )]
     pub repo: Account<'info, Repo>,
     #[account(
-        init_if_needed,
-        seeds = [b"reward", signer.key().as_ref() ,repo.key().as_ref()],
+        mut,
+        seeds = [b"sub", payload.claim.user_id.as_bytes() ,repo.key().as_ref()],
         bump,
-        payer=signer,
-        space = Reward::MAX_SIZE
     )]
-    pub reward: Account<'info, Reward>,
+    pub subscription: Account<'info, Subscription>,
     #[account(
       mut,
       seeds=[b"token"],

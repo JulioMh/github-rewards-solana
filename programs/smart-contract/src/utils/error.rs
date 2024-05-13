@@ -8,4 +8,6 @@ pub enum CustomError {
     ClaimedAlready,
     #[msg("This coupon is invalid")]
     InvalidCoupon,
+    #[msg("Repo needs to be approved")]
+    UnapprovedRepo,
 }

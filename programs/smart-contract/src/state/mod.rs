@@ -1,7 +1,7 @@
 pub use repo::*;
-pub use reward::*;
+pub use subscription::*;
 pub use vote::*;
 
 pub mod repo;
-pub mod reward;
+pub mod subscription;
 pub mod vote;
