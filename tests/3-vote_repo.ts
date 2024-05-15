@@ -31,7 +31,16 @@ describe("vote_repo", () => {
 
     it("vote up", async () => {
       const newUser = anchor.web3.Keypair.generate();
-      await provider.connection.requestAirdrop(newUser.publicKey, 10000000);
+      const tx = await provider.connection.requestAirdrop(
+        newUser.publicKey,
+        100000000000
+      );
+      const latestBlockHash = await provider.connection.getLatestBlockhash();
+      await provider.connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: tx,
+      });
 
       await program.methods
         .voteRepo({
@@ -41,8 +50,7 @@ describe("vote_repo", () => {
         })
         .signers([newUser])
         .accounts({ voter: newUser.publicKey })
-        .rpc()
-        .catch((e) => console.log(e));
+        .rpc();
 
       const [votePda1] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from("vote"), newUser.publicKey.toBuffer(), repoPda.toBuffer()],
@@ -78,7 +86,7 @@ describe("vote_repo", () => {
         await program.methods
           .voteRepo({
             repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
-            voteType: { down: {} },
+            voteType: { up: {} },
             timestamp: new anchor.BN(Date.now()),
           })
           .accounts({ voter: provider.publicKey })

@@ -41,7 +41,7 @@ pub struct Subscribe<'info> {
     pub repo: Account<'info, Repo>,
     #[account(
     init,
-    seeds = [b"sub", payload.user_id.as_bytes() ,repo.key().as_ref()],
+    seeds = [b"sub", payload.user_id.as_bytes(), repo.key().as_ref()],
     bump,
     payer=signer,
     space = Subscription::size(&payload.user_id)

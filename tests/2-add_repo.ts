@@ -7,7 +7,6 @@ import {
   program,
   repo,
   repoPda,
-  showLogs,
   signCoupon,
 } from "./utils";
 
@@ -22,7 +21,7 @@ describe("add_repo", () => {
     const hash: string = generateHashBuffer(serializedData);
 
     const { signature, recoveryId } = await signCoupon(hash, admin);
-    const tx = await program.methods
+    await program.methods
       .addRepo({
         coupon: {
           signature,

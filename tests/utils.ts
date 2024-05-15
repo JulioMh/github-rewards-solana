@@ -70,23 +70,16 @@ export const showLogs = async ({ program, tx }) => {
   console.log(logs);
 };
 
-export const generateId = async (githubId: string) => {
-  return new SignJWT({ githubId })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .sign(Buffer.from("key"));
-};
-
 export const repoSchema = {
   struct: { owner: "string", name: "string", branch: "string" },
 };
 
+export const claimSchema = {
+  struct: { commits: "u64", timestamp: "u128", userId: "string" },
+};
+
 export const addRepo = async (provider, repo) => {
-  const serializedData = borsh.serialize(repoSchema, {
-    owner: "a",
-    name: "b",
-    branch: "z",
-  });
+  const serializedData = borsh.serialize(repoSchema, repo);
   const hash: string = generateHashBuffer(serializedData);
   const { signature, recoveryId } = await signCoupon(hash, admin);
   await program.methods

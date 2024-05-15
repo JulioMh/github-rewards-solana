@@ -4,11 +4,9 @@ import {
   addRepo,
   admin,
   generateHashBuffer,
-  generateId,
   program,
   repo,
   repoPda,
-  repoSchema,
   signCoupon,
 } from "./utils";
 import * as borsh from "borsh";
@@ -26,12 +24,13 @@ describe("subscribe", () => {
         generateHashBuffer(serialized_id),
         admin
       );
+
       const [subscribePda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("sub"), serialized_id, repoPda.toBuffer()],
+        [Buffer.from("sub"), Buffer.from(id), repoPda.toBuffer()],
         program.programId
       );
 
-      await program.methods
+      const tx = await program.methods
         .subscribe({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
           userId: id,

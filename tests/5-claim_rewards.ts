@@ -1,8 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { SmartContract } from "../target/types/smart_contract";
-import { repo, repoPda, mint } from "./utils";
+import {
+  repo,
+  repoPda,
+  mint,
+  claimSchema,
+  generateHashBuffer,
+  signCoupon,
+  admin,
+  addRepo,
+} from "./utils";
 import { expect } from "chai";
+import * as borsh from "borsh";
 
 describe("claim_rewards", () => {
   const provider = anchor.AnchorProvider.env();
@@ -11,7 +21,7 @@ describe("claim_rewards", () => {
   const program = anchor.workspace.SmartContract as Program<SmartContract>;
 
   const [rewardPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("reward"), provider.publicKey.toBuffer(), repoPda.toBuffer()],
+    [Buffer.from("sub"), Buffer.from("123"), repoPda.toBuffer()],
     program.programId
   );
 
@@ -20,45 +30,91 @@ describe("claim_rewards", () => {
     owner: provider.publicKey,
   });
   const now = Date.now();
+  const claim = {
+    commits: new anchor.BN(10),
+    timestamp: new anchor.BN(Date.now()),
+    userId: "123",
+  };
+  const serialized = borsh.serialize(claimSchema, claim);
+  const hash = generateHashBuffer(serialized);
 
   describe("happy path", () => {
-    it("first time claiming rewards", async () => {
-      // await program.methods
-      //   .claimRewards({
-      //     repo,
-      //     commits: new anchor.BN(10),
-      //     timestamp: new anchor.BN(now),
-      //   })
-      //   .accounts({ destination })
-      //   .rpc();
-      // const balance = await provider.connection.getTokenAccountBalance(
-      //   destination
-      // );
-      // expect(balance.value.uiAmount).eq(10);
-      // const reward = await program.account.reward.fetch(rewardPda);
-      // expect(reward.totalClaimed.toNumber()).eq(10);
-    });
+    it("claim rewards", async () => {
+      const { signature, recoveryId } = await signCoupon(hash, admin);
+      await program.methods
+        .claimRewards({
+          repo,
+          coupon: { signature, recoveryId },
+          claim,
+        })
+        .accounts({ destination })
+        .rpc();
 
-    it("second time claiming rewards", async () => {
-      // await program.methods
-      //   .claimRewards({
-      //     repo,
-      //     commits: new anchor.BN(20),
-      //     timestamp: new anchor.BN(now + 10),
-      //   })
-      //   .accounts({ destination })
-      //   .rpc();
+      const balance = await provider.connection.getTokenAccountBalance(
+        destination
+      );
+      const reward = await program.account.subscription.fetch(rewardPda);
 
-      // const balance = await provider.connection.getTokenAccountBalance(
-      //   destination
-      // );
+      expect(balance.value.uiAmount).eq(10);
 
-      // expect(balance.value.uiAmount).eq(30);
-
-      // const reward = await program.account.reward.fetch(rewardPda);
-      // expect(reward.totalClaimed.toNumber()).eq(30);
+      expect(reward.totalClaimed.toNumber()).eq(10);
       expect(true).eq(true);
     });
   });
-  describe("errors", () => {});
+  describe("errors", () => {
+    it("claim same coupon twice", async () => {
+      try {
+        const { signature, recoveryId } = await signCoupon(hash, admin);
+
+        await program.methods
+          .claimRewards({
+            repo,
+            coupon: { signature, recoveryId },
+            claim,
+          })
+          .accounts({ destination })
+          .rpc();
+        expect(true).eq(false);
+      } catch (_err) {
+        expect(_err instanceof anchor.AnchorError);
+        const err: anchor.AnchorError = _err;
+        expect(err.error.errorMessage).eq("Commits already claimed");
+      }
+    });
+    it("claim repo you are not subscribed to", async () => {
+      try {
+        const claim1 = {
+          commits: new anchor.BN(10),
+          timestamp: new anchor.BN(Date.now() + 10),
+          userId: "123",
+        };
+        const serialized = borsh.serialize(claimSchema, claim1);
+        const hash = generateHashBuffer(serialized);
+        const newRepo = {
+          owner: "1a",
+          name: "b",
+          branch: "z",
+        };
+        await addRepo(provider, newRepo);
+
+        const { signature, recoveryId } = await signCoupon(hash, admin);
+
+        await program.methods
+          .claimRewards({
+            repo: newRepo,
+            coupon: { signature, recoveryId },
+            claim: claim1,
+          })
+          .accounts({ destination })
+          .rpc();
+        expect(true).eq(false);
+      } catch (_err) {
+        expect(_err instanceof anchor.AnchorError);
+        const err: anchor.AnchorError = _err;
+        expect(err.error.errorMessage).eq(
+          "The program expected this account to be already initialized"
+        );
+      }
+    });
+  });
 });

@@ -5,14 +5,14 @@ pub struct Subscription {
     pub bump: u8,            // 1
     pub last_claim: u128,    // 16
     pub total_claimed: u128, // 16
-    pub subscribed_at: u128,
-    pub repo_pda: Pubkey, // 32
-    pub user_id: String,  // 4 + len
+    pub subscribed_at: u128, // 16
+    pub repo_pda: Pubkey,    // 32
+    pub user_id: String,     // 4 + len
 }
 
 impl Subscription {
     pub fn size(user_id: &String) -> usize {
-        1 + 16 + 16 + 32 + 4 + user_id.len()
+        8 + 1 + 16 + 16 + 16 + 32 + 4 + user_id.len()
     }
 
     pub fn initialize(&mut self, user_id: String, repo: Pubkey, timestamp: u128, bump: u8) {
@@ -21,7 +21,7 @@ impl Subscription {
         self.bump = bump;
         self.total_claimed = 0;
         self.subscribed_at = timestamp;
-        self.last_claim = self.subscribed_at;
+        self.last_claim = 0;
     }
 
     pub fn update_total_claimed(&mut self, rewards: u128, timestamp: u128) {
