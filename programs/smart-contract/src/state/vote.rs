@@ -12,9 +12,11 @@ pub struct Vote {
     pub vote_type: VoteType, // 3
     pub timestamp: u128,     //16
     pub repo_pda: Pubkey,    // 32
-    pub voter: Pubkey,       // 32
+    pub user_id: String,     // 4 + len
 }
 
 impl Vote {
-    pub const MAX_SIZE: usize = 8 + 1 + 3 + 16 + 32 + 32;
+    pub fn size(user_id: &String) -> usize {
+        8 + 1 + 3 + 16 + 32 + 4 + user_id.len()
+    }
 }

@@ -1,26 +1,28 @@
 import * as anchor from "@coral-xyz/anchor";
 import { expect } from "chai";
-import { program, repo, repoPda } from "./utils";
+import { program, repo, repoPda, showLogs } from "./utils";
 
 describe("vote_repo", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const [votePda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("vote"), provider.publicKey.toBuffer(), repoPda.toBuffer()],
+    [Buffer.from("vote"), Buffer.from("123"), repoPda.toBuffer()],
     program.programId
   );
 
   describe("happy path", () => {
     it("vote down", async () => {
-      await program.methods
+      const a = await program.methods
         .voteRepo({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
           timestamp: new anchor.BN(Date.now()),
           voteType: { down: {} },
+          userId: "123",
         })
         .accounts({ voter: provider.publicKey })
-        .rpc();
+        .rpc()
+        .catch((e) => console.log(e));
 
       const vote_res = await program.account.vote.fetch(votePda);
       const repo_res = await program.account.repo.fetch(repoPda);
@@ -47,13 +49,14 @@ describe("vote_repo", () => {
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
           timestamp: new anchor.BN(Date.now()),
           voteType: { up: {} },
+          userId: "124",
         })
         .signers([newUser])
         .accounts({ voter: newUser.publicKey })
         .rpc();
 
       const [votePda1] = anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("vote"), newUser.publicKey.toBuffer(), repoPda.toBuffer()],
+        [Buffer.from("vote"), Buffer.from("124"), repoPda.toBuffer()],
         program.programId
       );
       const vote_res = await program.account.vote.fetch(votePda1);
@@ -69,6 +72,7 @@ describe("vote_repo", () => {
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
           voteType: { up: {} },
           timestamp: new anchor.BN(Date.now()),
+          userId: "123",
         })
         .accounts({ voter: provider.publicKey })
         .rpc();
@@ -88,6 +92,7 @@ describe("vote_repo", () => {
             repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
             voteType: { up: {} },
             timestamp: new anchor.BN(Date.now()),
+            userId: "123",
           })
           .accounts({ voter: provider.publicKey })
           .rpc();

@@ -22,11 +22,7 @@ describe("init_token", () => {
 
   describe("happy path", () => {
     it("create token mint", async () => {
-      await program.methods
-        .initToken()
-        .accounts({ metadata })
-        .rpc()
-        .catch((e) => console.error(e));
+      await program.methods.initToken().accounts({ metadata }).rpc();
 
       const mintInfo = await provider.connection.getAccountInfo(mint);
 

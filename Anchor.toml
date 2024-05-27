@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-smart_contract = "2QDECqPyjFKrTxC2cJciA6iERVHHh7bHELzD5WRgScPk"
+smart_contract = "8Jy1eMYr3fjGHBAbW5ebT5tTssXtB4BQpWRzZRHk4HMg"
 
 [[test.genesis]]
 address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
@@ -20,3 +20,4 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+

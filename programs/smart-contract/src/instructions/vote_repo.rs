@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     state::{Repo, RepoPayload, Vote, VoteType},
     utils::CustomError,
@@ -7,12 +5,9 @@ use crate::{
 use anchor_lang::prelude::*;
 
 pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()> {
-    let voter = ctx.accounts.voter.key();
     let repo: &mut Account<'_, Repo> = &mut ctx.accounts.repo;
     let vote = &mut ctx.accounts.vote;
-
-    let default_pubkey = Pubkey::from_str("11111111111111111111111111111111").unwrap();
-    let just_initialized = vote.voter.key() == default_pubkey;
+    let just_initialized = vote.timestamp == 0;
 
     require!(
         just_initialized || vote.vote_type != payload.vote_type,
@@ -20,7 +15,7 @@ pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()>
     );
 
     if just_initialized {
-        vote.voter = voter;
+        vote.user_id = payload.user_id;
         vote.vote_type = payload.vote_type;
         vote.repo_pda = repo.key();
         vote.bump = ctx.bumps.vote;
@@ -39,6 +34,7 @@ pub fn vote_repo(ctx: Context<VoteRepo>, payload: VoteRepoPayload) -> Result<()>
 pub struct VoteRepoPayload {
     pub repo: RepoPayload,
     pub timestamp: u128,
+    pub user_id: String,
     pub vote_type: VoteType,
 }
 
@@ -53,10 +49,10 @@ pub struct VoteRepo<'info> {
     pub repo: Account<'info, Repo>,
     #[account(
         init_if_needed,
-        seeds = [b"vote", voter.key().as_ref(), repo.key().as_ref()],
+        seeds = [b"vote", payload.user_id.as_bytes(), repo.key().as_ref()],
         bump,
         payer=voter,
-        space = Vote::MAX_SIZE
+        space = Vote::size(&payload.user_id)
     )]
     pub vote: Account<'info, Vote>,
     #[account(mut)]

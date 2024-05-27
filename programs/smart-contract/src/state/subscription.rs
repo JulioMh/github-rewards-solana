@@ -21,7 +21,7 @@ impl Subscription {
         self.bump = bump;
         self.total_claimed = 0;
         self.subscribed_at = timestamp;
-        self.last_claim = 0;
+        self.last_claim = timestamp;
     }
 
     pub fn update_total_claimed(&mut self, rewards: u128, timestamp: u128) {

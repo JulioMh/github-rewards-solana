@@ -29,10 +29,9 @@ describe("claim_rewards", () => {
     mint,
     owner: provider.publicKey,
   });
-  const now = Date.now();
   const claim = {
     commits: new anchor.BN(10),
-    timestamp: new anchor.BN(Date.now()),
+    timestamp: new anchor.BN(Date.now() + 1000000),
     userId: "123",
   };
   const serialized = borsh.serialize(claimSchema, claim);

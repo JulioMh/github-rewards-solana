@@ -5,7 +5,7 @@ pub mod instructions;
 pub mod state;
 pub mod utils;
 
-declare_id!("2QDECqPyjFKrTxC2cJciA6iERVHHh7bHELzD5WRgScPk");
+declare_id!("8Jy1eMYr3fjGHBAbW5ebT5tTssXtB4BQpWRzZRHk4HMg");
 
 #[program]
 pub mod smart_contract {

@@ -30,7 +30,7 @@ describe("subscribe", () => {
         program.programId
       );
 
-      const tx = await program.methods
+      await program.methods
         .subscribe({
           repo: { owner: repo.owner, name: repo.name, branch: repo.branch },
           userId: id,
